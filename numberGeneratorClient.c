@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#define LISTEN_PORT 406
+
+int main() {
+    int sockfd;
+    struct sockaddr_in server_addr;
+    int received_number;
+
+    // Create socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Prepare server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Server's IP address
+    server_addr.sin_port = htons(LISTEN_PORT);
+
+    // Connect to the server
+    if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        perror("connect");
+        exit(EXIT_FAILURE);
+    }
+
+    // Receive the random number from the server
+    if (recv(sockfd, &received_number, sizeof(received_number), 0) == -1) {
+        perror("recv");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server gave me this: %d\n", received_number);
+
+    // Close the connection
+    close(sockfd);
+
+    return 0;
+}

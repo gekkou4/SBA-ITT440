@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#define RANDOM_NUMBER_MIN 50000
+#define RANDOM_NUMBER_MAX 80000
+#define LISTEN_PORT 406
+
+int numberGenerator() {
+    return (rand() % (RANDOM_NUMBER_MAX - RANDOM_NUMBER_MIN + 1)) + RANDOM_NUMBER_MIN;
+}
+
+int main() {
+    int sockfd, newsockfd;
+    socklen_t client_len;
+    struct sockaddr_in server_addr, client_addr;
+    int generated_number;
+
+    // Create socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Prepare server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(LISTEN_PORT);
+
+    // Bind socket to server address
+    if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        perror("bind");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(sockfd, 5) == -1) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("I, Server, listening on port %d...\n", LISTEN_PORT);
+
+    // Accept a client connection
+    client_len = sizeof(client_addr);
+    newsockfd = accept(sockfd, (struct sockaddr*)&client_addr, &client_len);
+    if (newsockfd == -1) {
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+
+    // Generate a random number
+    generated_number = numberGenerator();
+    printf("Number generated is %d\n", generated_number);
+
+    // Send the random number to the client
+    if (send(newsockfd, &generated_number, sizeof(generated_number), 0) == -1) {
+        perror("send");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("The client has this number: \n");
+
+    // Close the connections
+    close(newsockfd);
+    close(sockfd);
+
+    return 0;
+}
